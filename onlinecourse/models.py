@@ -75,6 +75,9 @@ class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     content = models.TextField()
 
+    def __str__(self):
+        return self.title
+
 
 # Enrollment model
 # <HINT> Once a user enrolled a class, an enrollment entry should be created between the user and course
@@ -93,6 +96,9 @@ class Enrollment(models.Model):
     date_enrolled = models.DateField(default=now)
     mode = models.CharField(max_length=5, choices=COURSE_MODES, default=AUDIT)
     rating = models.FloatField(default=5.0)
+
+    def __str__(self):
+        return self.user.username + ' enrolled in ' + self.course.name
 
 
 # <HINT> Create a Question Model with:
@@ -115,6 +121,23 @@ class Enrollment(models.Model):
     #    else:
     #        return False
 
+class Question(models.Model):
+    # lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)
+    question_text = models.CharField(max_length=100, null=False)
+    grade = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f'{self.question_text} on course titled {self.course.name}'
+
+    def is_get_score(self, selected_ids):
+       all_answers = self.choice_set.filter(is_correct=True).count()
+       selected_correct = self.choice_set.filter(is_correct=True, id__in=selected_ids).count()
+       if all_answers == selected_correct:
+           return True
+       else:
+           return False
+
 
 #  <HINT> Create a Choice Model with:
     # Used to persist choice content for a question
@@ -124,11 +147,27 @@ class Enrollment(models.Model):
     # Other fields and methods you would like to design
 # class Choice(models.Model):
 
+class Choice(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    choice_text = models.CharField(max_length=50, null=False)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.question.question_text + "  " + self.choice_text
+
+
 # <HINT> The submission model
 # One enrollment could have multiple submission
 # One submission could have multiple choices
 # One choice could belong to multiple submissions
 #class Submission(models.Model):
 #    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
-#    choices = models.ManyToManyField(Choice)
+#    chocies = models.ManyToManyField(Choice)
 #    Other fields and methods you would like to design
+
+class Submission(models.Model):
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
+    choices = models.ManyToManyField(Choice)
+
+    def __str__(self):
+        return f'{self.enrollment.user.first_name} submitted {self.choices}'
